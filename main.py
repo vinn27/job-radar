@@ -11,6 +11,7 @@ Commands:
 import argparse
 import logging
 import sys
+from datetime import datetime
 
 # Windows consoles default to cp1252, which chokes on ₹ etc.
 for _stream in (sys.stdout, sys.stderr):
@@ -25,6 +26,13 @@ log = logging.getLogger("jobradar")
 
 def cmd_run(args, settings):
     from jobradar.pipeline import run
+
+    # Daytime window guard: recruiters post during office hours, so night-time
+    # triggers exit quietly instead of scraping (config: "schedule": {"active_hours": [8, 22]}).
+    window = settings.raw.get("schedule", {}).get("active_hours")
+    if window and args.command == "run" and not (int(window[0]) <= datetime.now().hour < int(window[1])):
+        log.info("outside active hours %s (now %02d:xx) — skipping run", window, datetime.now().hour)
+        return
 
     summary = run(
         settings,
