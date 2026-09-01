@@ -2,9 +2,11 @@ name: jobradar
 
 on:
   schedule:
-    # Every 2 hours at :35 (offset from the PC task at :05 — PC owns Naukri,
-    # this runner owns LinkedIn; different boards, no overlap).
-    - cron: "35 */2 * * *"
+    # Smart schedule (IST = UTC+5:30). This runner owns LinkedIn; the PC owns Naukri.
+    # Daytime 8:05–22:05 IST, hourly: 02:35–16:35 UTC
+    - cron: "35 2-16 * * *"
+    # Overnight keep-alives 00:05 IST and 06:05 IST (morning digest before wake-up)
+    - cron: "35 18,0 * * *"
   workflow_dispatch: {}
 
 permissions:
