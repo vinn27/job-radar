@@ -1,0 +1,45 @@
+{
+  "searches": [
+    { "keywords": "data engineer", "location": "India", "pages": 2, "params": { "f_E": "2", "f_TPR": "r604800" } },
+    { "keywords": "junior data engineer", "location": "India", "pages": 1, "params": { "f_E": "2", "f_TPR": "r604800" } }
+  ],
+  "sources": {
+    "linkedin": { "enabled": true },
+    "adzuna": { "enabled": false },
+    "naukri": {
+      "enabled": true,
+      "searches": [
+        { "keywords": "data engineer", "location": "India", "experience": 1 }
+      ]
+    }
+  },
+  "profile": {
+    "hard_max_required_years": 2,
+    "seniority_exclude": ["senior", "sr.", "lead", "principal", "staff", "architect", "manager", "head of", "ii", "iii", "iv"],
+    "exclude_keywords": ["java developer", ".net", "10+ years"],
+    "skills": [
+      { "name": "data engineer", "weight": 12, "must": false, "aliases": ["data engineering"] },
+      { "name": "sql", "weight": 12, "must": true, "aliases": ["sql server", "t-sql", "ssms", "pl/sql", "mysql", "postgresql", "snowflake"] },
+      { "name": "etl", "weight": 10, "must": false, "aliases": ["elt", "data pipeline", "pipelines", "data integration"] },
+      { "name": "python", "weight": 10, "must": true, "aliases": ["pandas"] },
+      { "name": "snowflake", "weight": 8, "must": false, "aliases": [] },
+      { "name": "azure", "weight": 8, "must": false, "aliases": ["adf", "azure data factory", "synapse", "fabric"] },
+      { "name": "data warehouse", "weight": 6, "must": false, "aliases": ["dwh", "dimensional modeling", "star schema", "data modeling"] },
+      { "name": "data quality", "weight": 4, "must": false, "aliases": ["reconciliation", "data validation"] },
+      { "name": "power bi", "weight": 4, "must": false, "aliases": ["powerbi", "dax", "business intelligence"] },
+      { "name": "pyspark", "weight": 4, "must": false, "aliases": ["spark"] }
+    ]
+  },
+  "resumes": [
+    { "name": "DE-General", "emphasize": ["sql", "python", "etl", "snowflake", "azure", "data warehouse"] }
+  ],
+  "scoring": {
+    "min_score_to_email": 40,
+    "detail_fetch_threshold": 15,
+    "max_details_per_run": 12
+  },
+  "freshness": { "max_posted_age_days": 4 },
+  "digest": { "max_jobs": 25 },
+  "politeness": { "min_delay_sec": 2.0, "max_delay_sec": 4.0, "retries": 3, "timeout_sec": 15 },
+  "email": { "to": "YOUR_EMAIL@gmail.com", "subject_prefix": "Job Radar" }
+}

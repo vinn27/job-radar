@@ -1,0 +1,42 @@
+name: jobradar
+
+on:
+  schedule:
+    # Every 2 hours at :35 (offset from the PC task at :05 — PC owns Naukri,
+    # this runner owns LinkedIn; different boards, no overlap).
+    - cron: "35 */2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jobradar-run
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run Job Radar (LinkedIn only)
+        env:
+          JOB_RADAR_SMTP_USER: ${{ secrets.JOB_RADAR_SMTP_USER }}
+          JOB_RADAR_SMTP_PASSWORD: ${{ secrets.JOB_RADAR_SMTP_PASSWORD }}
+        run: python main.py run --source linkedin
+
+      - name: Persist dedupe database
+        run: |
+          git config user.name "jobradar-bot"
+          git config user.email "actions@github.com"
+          git add -f data/jobradar.db
+          git diff --cached --quiet || (git commit -m "db: run $(date -u +%FT%TZ)" && git push)
