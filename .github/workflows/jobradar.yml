@@ -1,12 +1,10 @@
 name: jobradar
 
+# NOTE: this showcase repo has no schedule trigger on purpose — config.json and
+# secrets deliberately never live here, so scheduled runs would always fail.
+# To run 24/7: make a PRIVATE fork, add your config.json + repo secrets, and
+# re-add the schedule lines (see QUICKSTART.md step 6).
 on:
-  schedule:
-    # Smart schedule (IST = UTC+5:30). This runner owns LinkedIn; the PC owns Naukri.
-    # Daytime 8:05–22:05 IST, hourly: 02:35–16:35 UTC
-    - cron: "35 2-16 * * *"
-    # Overnight keep-alives 00:05 IST and 06:05 IST (morning digest before wake-up)
-    - cron: "35 18,0 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -34,7 +32,13 @@ jobs:
         env:
           JOB_RADAR_SMTP_USER: ${{ secrets.JOB_RADAR_SMTP_USER }}
           JOB_RADAR_SMTP_PASSWORD: ${{ secrets.JOB_RADAR_SMTP_PASSWORD }}
-        run: python main.py run --source linkedin
+        run: |
+          if [ ! -f config.json ]; then
+            echo "No config.json in this repo — that is by design (secrets stay local)."
+            echo "Follow QUICKSTART.md step 6 to set up your own private runner."
+            exit 0
+          fi
+          python main.py run --source linkedin
 
       - name: Persist dedupe database
         run: |
