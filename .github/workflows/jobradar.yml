@@ -42,6 +42,10 @@ jobs:
 
       - name: Persist dedupe database
         run: |
+          if [ ! -f data/jobradar.db ]; then
+            echo "no database this run — nothing to persist"
+            exit 0
+          fi
           git config user.name "jobradar-bot"
           git config user.email "actions@github.com"
           git add -f data/jobradar.db
