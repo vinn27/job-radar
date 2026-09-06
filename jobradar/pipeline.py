@@ -31,10 +31,23 @@ def _entry(job: JobPosting, mr: MatchResult) -> dict:
     return {
         "title": job.title, "company": job.company, "location": job.location,
         "posted_text": job.posted_text, "salary": job.salary,
-        "url": job.apply_url, "score": int(mr.score),
+        "url": job.apply_url, "score": int(mr.score), "source": job.source,
         "matched_skills": mr.matched, "missing_must_haves": mr.missing_must_haves,
         "recommended_resume": mr.recommended_resume,
     }
+
+
+def digest_subject(settings, entries: list[dict]) -> str:
+    """Subject carries the source board (e.g. 'Job Radar [LinkedIn]: 2 new matches')
+    so Gmail threads each board's digests separately instead of piling them
+    into one indistinguishable conversation."""
+    prefix = settings.email.get("subject_prefix", "Job Radar")
+    display = {"linkedin": "LinkedIn", "naukri": "Naukri", "adzuna": "Adzuna"}
+    boards = "/".join(sorted({display.get(e["source"], e["source"].title())
+                              for e in entries}))
+    n = len(entries)
+    return (f"{prefix} [{boards}]: {n} new match{'es' if n != 1 else ''} — "
+            f"{datetime.now():%d %b %H:%M}")
 
 
 def run(settings, dry_run: bool = False, only_source: str | None = None,
@@ -172,9 +185,7 @@ def _run_after_collect(settings, conn, run_id, jobs, errors, adapters,
             log.info("dry-run: %d jobs would be emailed; preview at %s",
                      len(entries), LOGS_DIR / "digest_preview.html")
         else:
-            subject = (f"{settings.email.get('subject_prefix', 'Job Radar')}: "
-                       f"{len(entries)} new match{'es' if len(entries) != 1 else ''} — "
-                       f"{datetime.now():%d %b %H:%M}")
+            subject = digest_subject(settings, entries)
             mailer.send(settings, subject, text, html)
             db.mark_emailed(conn, [r["db_id"] for r in selected])
             emailed = len(entries)
