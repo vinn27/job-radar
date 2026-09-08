@@ -163,9 +163,13 @@ class NaukriAdapter(SourceAdapter):
         url = SEARCH_URL.format(slug=slug)
         if city:
             url += f"-in-{slugify(city)}"
+        # sort=f = freshest first (verified live: default relevance sort serves
+        # weeks-old postings on page 1 and hides fresh ones entirely).
+        params = ["sort=f"]
         if search.get("experience"):
-            # 1 = jobs that accept 0-1 yrs starters, 2 = 1-3 yrs, ... (verified live)
-            url += f"?experience={int(search['experience'])}"
+            # 1 = jobs that accept 0-1 yrs starters, 2 = 1-3 yrs (verified live)
+            params.append(f"experience={int(search['experience'])}")
+        url += "?" + "&".join(params)
         resp = self._navigate(url, wait_selector="div.srp-jobtuple-wrapper[data-job-id]")
         if resp is not None and resp.status != 200:
             raise RuntimeError(f"HTTP {resp.status} from {url}")
