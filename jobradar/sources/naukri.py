@@ -137,7 +137,10 @@ class NaukriAdapter(SourceAdapter):
 
     def _navigate(self, url: str, wait_selector: str | None = None):
         self._ensure_browser()
-        gap = random.uniform(2.0, 4.0) - (time.monotonic() - self._last_nav)
+        p = self.settings.politeness
+        gap = random.uniform(float(p.get("min_delay_sec", 3.0)),
+                             float(p.get("max_delay_sec", 7.0))) \
+            - (time.monotonic() - self._last_nav)
         if gap > 0:
             time.sleep(gap)
         resp = self._page.goto(url, wait_until="domcontentloaded", timeout=45_000)
@@ -154,7 +157,30 @@ class NaukriAdapter(SourceAdapter):
 
     # -- adapter API --------------------------------------------------------
 
+    def collect(self, searches: list[dict]):
+        # Randomize the order every run — a fixed query sequence is exactly the
+        # kind of pattern Akamai's bot scoring feeds on.
+        shuffled = list(searches)
+        random.shuffle(shuffled)
+        return super().collect(shuffled)
+
     def fetch_cards(self, search: dict) -> list[JobPosting]:
+        # One retry per search: Naukri intermittently slow-rolls a navigation
+        # (goto/selector timeouts); a single fresh attempt usually clears it.
+        last_exc: Exception | None = None
+        for attempt in (1, 2):
+            try:
+                return self._fetch_cards_once(search)
+            except Exception as exc:
+                last_exc = exc
+                log.warning("attempt %d for %r failed (%s)%s",
+                            attempt, search["keywords"], exc,
+                            " — retrying" if attempt == 1 else "")
+                if attempt == 1 and self._page is not None:
+                    self._page.wait_for_timeout(4000)
+        raise last_exc  # type: ignore[misc]
+
+    def _fetch_cards_once(self, search: dict) -> list[JobPosting]:
         slug = slugify(search["keywords"])
         location = (search.get("location") or "").strip()
         city = ""
