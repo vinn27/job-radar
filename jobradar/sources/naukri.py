@@ -186,24 +186,30 @@ class NaukriAdapter(SourceAdapter):
         city = ""
         if location and location.lower() not in ("india", "remote", "anywhere"):
             city = location.split(",")[0].strip()
-        url = SEARCH_URL.format(slug=slug)
+        base_url = SEARCH_URL.format(slug=slug)
         if city:
-            url += f"-in-{slugify(city)}"
+            base_url += f"-in-{slugify(city)}"
         # sort=f = freshest first (verified live: default relevance sort serves
         # weeks-old postings on page 1 and hides fresh ones entirely).
         params = ["sort=f"]
         if search.get("experience"):
             # 1 = jobs that accept 0-1 yrs starters, 2 = 1-3 yrs (verified live)
             params.append(f"experience={int(search['experience'])}")
-        url += "?" + "&".join(params)
-        resp = self._navigate(url, wait_selector="div.srp-jobtuple-wrapper[data-job-id]")
-        if resp is not None and resp.status != 200:
-            raise RuntimeError(f"HTTP {resp.status} from {url}")
-        html = self._page.content()
-        cards = parse_cards(html, search["keywords"])
-        if not cards:
-            raise RuntimeError(f"0 cards parsed from {url} (selector drift or bot wall)")
-        return cards
+        base_url += "?" + "&".join(params)
+
+        jobs: list[JobPosting] = []
+        for page in range(1, int(search.get("pages", 1)) + 1):
+            url = base_url if page == 1 else f"{base_url}&pg={page}"
+            resp = self._navigate(url, wait_selector="div.srp-jobtuple-wrapper[data-job-id]")
+            if resp is not None and resp.status != 200:
+                raise RuntimeError(f"HTTP {resp.status} from {url}")
+            cards = parse_cards(self._page.content(), search["keywords"])
+            if not cards:
+                if page == 1:
+                    raise RuntimeError(f"0 cards parsed from {url} (selector drift or bot wall)")
+                break  # ran past the last page
+            jobs.extend(cards)
+        return jobs
 
     def fetch_detail(self, job: JobPosting) -> str:
         if not job.apply_url:
